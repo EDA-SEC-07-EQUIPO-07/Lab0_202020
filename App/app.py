@@ -31,7 +31,7 @@ import sys
 import csv
 from time import process_time 
 
-def loadCSVFile (file, lst, sep=";"):
+def loadCSVFile (file, file2, lst, lst2, sep=";"): 
     """
     Carga un archivo csv a una lista
     Args:
@@ -47,6 +47,7 @@ def loadCSVFile (file, lst, sep=";"):
     Returns: None   
     """
     del lst[:]
+    del lst2[:]
     print("Cargando archivo ....")
     t1_start = process_time() #tiempo inicial
     dialect = csv.excel()
@@ -56,8 +57,13 @@ def loadCSVFile (file, lst, sep=";"):
             spamreader = csv.DictReader(csvfile, dialect=dialect)
             for row in spamreader: 
                 lst.append(row)
+        with open(file2, encoding="utf-8") as csvfile:
+            spamreader = csv.DictReader(csvfile, dialect=dialect)
+            for row in spamreader: 
+                lst2.append(row)
     except:
         del lst[:]
+        del lst2[:]
         print("Se presento un error en la carga del archivo")
     
     t1_stop = process_time() #tiempo final
@@ -101,11 +107,32 @@ def countElementsFilteredByColumn(criteria, column, lst):
         print("Tiempo de ejecución ",t1_stop-t1_start," segundos")
     return counter
 
-def countElementsByCriteria(criteria, column, lst):
+def countElementsByCriteria(criteria, column, column2, lst, lst2):
     """
     Retorna la cantidad de elementos que cumplen con un criterio para una columna dada
     """
-    return 0
+    ids=[]
+    i=0
+    prom=0
+    counter=0 #Cantidad de repeticiones
+    if len(lst)==0:
+        print("La lista esta vacía")  
+        return 0
+    else:
+        for element in lst2:
+            if criteria.lower()==element[column].lower():
+                ids.append(int(element["id"]))
+        
+        for element2 in lst:
+            if (int(ids[i])==int(element2["id"])) and (float(element2[column2])>=6.0):
+                counter=counter+1
+                prom=prom+float(element2[column2])
+                if i<(len(ids)-1): 
+                    i=i+1
+
+            
+    prom=prom/counter
+    return (counter,prom)
 
 
 def main():
@@ -117,25 +144,28 @@ def main():
     Return: None 
     """
     lista = [] #instanciar una lista vacia
+    lista1=[]
     while True:
         printMenu() #imprimir el menu de opciones en consola
         inputs =input('Seleccione una opción para continuar\n') #leer opción ingresada
         if len(inputs)>0:
             if int(inputs[0])==1: #opcion 1
-                loadCSVFile("Data/test.csv", lista) #llamar funcion cargar datos
-                print("Datos cargados, "+str(len(lista))+" elementos cargados")
+                loadCSVFile("Data/SmallMoviesDetailsCleaned.csv","Data/MoviesCastingRaw-small.csv",lista, lista1) #llamar funcion cargar datos
+                print("Datos cargados, "+str(len(lista)+len(lista1))+" elementos cargados")
             elif int(inputs[0])==2: #opcion 2
                 if len(lista)==0: #obtener la longitud de la lista
                     print("La lista esta vacía")    
-                else: print("La lista tiene "+str(len(lista))+" elementos")
+                else: 
+                    print("La lista tiene "+str(len(lista))+" elementos")
+                    print("La lista 2 tiene "+str(len(lista1))+" elementos")
             elif int(inputs[0])==3: #opcion 3
                 criteria =input('Ingrese el criterio de búsqueda\n')
-                counter=countElementsFilteredByColumn(criteria, "nombre", lista) #filtrar una columna por criterio  
+                counter=countElementsFilteredByColumn(criteria, "genres", lista) #filtrar una columna por criterio  
                 print("Coinciden ",counter," elementos con el crtierio: ", criteria  )
             elif int(inputs[0])==4: #opcion 4
                 criteria =input('Ingrese el criterio de búsqueda\n')
-                counter=countElementsByCriteria(criteria,0,lista)
-                print("Coinciden ",counter," elementos con el crtierio: '", criteria ,"' (en construcción ...)")
+                tupla=countElementsByCriteria(criteria,"director_name","vote_average",lista,lista1)
+                print("(Numero de peliculas buenas, votación promedio):",tupla)
             elif int(inputs[0])==0: #opcion 0, salir
                 sys.exit(0)
 
